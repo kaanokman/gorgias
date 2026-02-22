@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition, type CSSProperties } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
     Row,
@@ -15,6 +15,7 @@ import {
     Tooltip,
     Tabs,
     Tab,
+    Spinner,
 } from "react-bootstrap";
 import {
     flexRender,
@@ -31,7 +32,7 @@ import { FaRegStar } from "react-icons/fa";
 import { FaSortDown as Fa6SortDown, FaSortUp as Fa6SortUp } from "react-icons/fa6";
 import { CgFileDocument } from "react-icons/cg";
 import { ReviewType } from "@/types/components";
-import Select from "react-select";
+import Select, { type StylesConfig } from "react-select";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { PieChart } from "@mui/x-charts/PieChart";
 
@@ -149,16 +150,19 @@ function ReviewDetailsActions({ review }: { review: ReviewType }) {
 export default function ReviewsTable({
     reviews,
     allDomains,
+    selectedDomain,
     error,
     range,
 }: {
     reviews: ReviewType[];
     allDomains: string[];
+    selectedDomain?: string;
     error?: string;
     range: RangeISO;
 }) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const [isPending, startTransition] = useTransition();
 
     const [sorting, setSorting] = useState<SortingState>([{ id: "datePublished", desc: true }]);
     const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
@@ -169,7 +173,8 @@ export default function ReviewsTable({
         end: new Date(range.end),
     }));
 
-    const [domain, setDomain] = useState("");
+    const [domain, setDomain] = useState(selectedDomain ?? "");
+    const [pendingDomain, setPendingDomain] = useState<string | null>(null);
     const [sentiment, setSentiment] = useState("");
     const [category, setCategory] = useState("");
     const [replyFilter, setReplyFilter] = useState<"" | "replied" | "not_replied">("");
@@ -178,6 +183,11 @@ export default function ReviewsTable({
     useEffect(() => {
         setDateRange({ start: new Date(range.start), end: new Date(range.end) });
     }, [range.start, range.end]);
+
+    useEffect(() => {
+        setDomain(selectedDomain ?? "");
+        setPendingDomain(null);
+    }, [selectedDomain]);
 
     useEffect(() => {
         if (error) {
@@ -266,18 +276,17 @@ export default function ReviewsTable({
         () => categories.map((value) => ({ value, label: formatLabel(value) })),
         [categories],
     );
-    const filterSelectStyles = useMemo(() => ({
-        control: (base: any, state: any) => ({
+    const filterSelectStyles = useMemo<StylesConfig<FilterOption, false>>(() => ({
+        control: (base, state) => ({
             ...base,
             minHeight: 38,
             borderColor: state.isFocused ? "#ff9780" : base.borderColor,
             boxShadow: state.isFocused ? "0 0 0 1px #ff9780" : base.boxShadow,
             "&:hover": {
-                ...base["&:hover"],
                 borderColor: "#ff9780",
             },
         }),
-        menu: (base: any) => ({ ...base, zIndex: 5 }),
+        menu: (base) => ({ ...base, zIndex: 5 }),
     }), []);
 
     useEffect(() => {
@@ -295,9 +304,21 @@ export default function ReviewsTable({
         const params = new URLSearchParams(searchParams.toString());
         params.set("start", nextRange.start.toISOString().slice(0, 10));
         params.set("end", nextRange.end.toISOString().slice(0, 10));
-        router.replace(`?${params.toString()}`);
-        router.refresh();
-    }, [router, searchParams]);
+        startTransition(() => {
+            router.replace(`?${params.toString()}`);
+            router.refresh();
+        });
+    }, [router, searchParams, startTransition]);
+
+    const onDomainChange = useCallback((nextDomain: string) => {
+        setPendingDomain(nextDomain);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("domain", nextDomain);
+        startTransition(() => {
+            router.replace(`?${params.toString()}`);
+            router.refresh();
+        });
+    }, [router, searchParams, startTransition]);
 
     const filteredReviews = useMemo(() => {
         return reviews.filter((review) => {
@@ -518,17 +539,26 @@ export default function ReviewsTable({
                     Reviews for domain
                 </Col>
                 <Col xs={12} md>
-                    <Select
-                        instanceId="domain-filter"
-                        inputId="domain-filter"
-                        styles={filterSelectStyles}
-                        options={domainOptions}
-                        value={domainOptions.find((o) => o.value === domain) ?? null}
-                        onChange={(opt) => setDomain(opt?.value ?? "")}
-                        isClearable={false}
-                        isDisabled={domainOptions.length === 0}
-                        placeholder="Select domain"
-                    />
+                    <div className="d-flex align-items-center gap-2">
+                        <div className="flex-grow-1">
+                            <Select
+                                instanceId="domain-filter"
+                                inputId="domain-filter"
+                                styles={filterSelectStyles}
+                                options={domainOptions}
+                                value={domainOptions.find((o) => o.value === (pendingDomain ?? domain)) ?? null}
+                                onChange={(opt) => {
+                                    const nextDomain = opt?.value ?? "";
+                                    if (!nextDomain || nextDomain === (pendingDomain ?? domain)) return;
+                                    onDomainChange(nextDomain);
+                                }}
+                                isClearable={false}
+                                isDisabled={domainOptions.length === 0 || isPending}
+                                placeholder="Select domain"
+                            />
+                        </div>
+                        {isPending && <Spinner size="sm" className="flex-shrink-0" />}
+                    </div>
                 </Col>
                 <Col xs='auto'>
                     <Dropdown>
@@ -831,6 +861,18 @@ export default function ReviewsTable({
                     </Tab>
                     <Tab eventKey="metrics" title="Metrics">
                         <div className="d-flex flex-column gap-3">
+                            {isPending ? (
+                                <div
+                                    className="d-flex align-items-center justify-content-center border rounded bg-white text-muted"
+                                    style={{ minHeight: 320 }}
+                                >
+                                    <div className="d-flex align-items-center gap-2">
+                                        <Spinner size="sm" />
+                                        <span>Loading metrics...</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
                             <Row className="g-3">
                                 <Col md={4}>
                                     <div className="bg-white border rounded p-3 h-100">
@@ -881,7 +923,7 @@ export default function ReviewsTable({
                                                     }]}
                                                     xAxis={[{
                                                         tickMinStep: 1,
-                                                        valueFormatter: (value) => String(Math.round(Number(value))),
+                                                        valueFormatter: (value: number | null) => String(Math.round(Number(value))),
                                                     }]}
                                                     series={[
                                                         {
@@ -929,7 +971,7 @@ export default function ReviewsTable({
                                                     }]}
                                                     yAxis={[{
                                                         tickMinStep: 1,
-                                                        valueFormatter: (value) => String(Math.round(Number(value))),
+                                                        valueFormatter: (value: number | null) => String(Math.round(Number(value))),
                                                     }]}
                                                     series={[{
                                                         data: [...starRatingMetrics.counts]
@@ -962,7 +1004,10 @@ export default function ReviewsTable({
                                                             outerRadius: 88,
                                                             paddingAngle: 2,
                                                             cornerRadius: 4,
-                                                            valueFormatter: (item) => {
+                                                            valueFormatter: (item: {
+                                                                label?: string | ((location: "legend" | "tooltip" | "arc") => string);
+                                                                value: number;
+                                                            }) => {
                                                                 const percent = sentimentTotal > 0
                                                                     ? Math.round((item.value / sentimentTotal) * 100)
                                                                     : 0;
@@ -978,6 +1023,8 @@ export default function ReviewsTable({
                                     </div>
                                 </Col>
                             </Row>
+                                </>
+                            )}
                         </div>
                     </Tab>
                 </Tabs>

@@ -22,12 +22,6 @@ export default function Home() {
                     <Col className="d-flex flex-column gap-2 items-center">
                         <div className="text-2xl">KAAN OKMAN</div>
                         <div className="text-5xl text-italic"> Reviews Analysis Dashboard </div>
-                        {/* <div className='d-flex gap-2 text-3xl border border-oak rounded-4 px-3 py-2' style={{ backgroundColor: '#fff9f1' }}>
-              <div className='h-100 flex items-center'>
-                <LuHammer />
-              </div>
-              Forward Deployed Engineer - Project 2
-            </div> */}
                     </Col>
                 </Row>
                 <Row>
@@ -39,27 +33,27 @@ export default function Home() {
                             variant: "dark",
                             icon: AiFillGithub,
                         },
-                        {
-                            title: "Demo",
-                            link: "/",
-                            variant: "oak",
-                            description: "A demonstration video of the dashboard's workflow",
-                            icon: BsPersonVideo2,
-                        },
+                        // {
+                        //     title: "Demo",
+                        //     link: "/",
+                        //     variant: "oak",
+                        //     description: "A demonstration video of the dashboard's workflow",
+                        //     icon: BsPersonVideo2,
+                        // },
                         {
                             title: "Dashboard",
                             link: "/dashboard",
-                            variant: "sunlight",
+                            variant: "oak",
                             description: "The implemented dashboard for insights into a domain's Trustpilot reviews",
                             icon: LuLayoutDashboard,
                         },
                     ].map((project) => (
-                        <Col xs={12} md={4} key={project.title} className="d-flex flex-column gap-3">
+                        <Col xs={12} md={6} key={project.title} className="d-flex flex-column gap-3">
                             <div
                                 className="w-100 bg-light rounded border flex items-center justify-center"
                                 style={{ aspectRatio: 4 / 3 }}
                             >
-                                <project.icon size={120} />
+                                <project.icon size={160} />
                             </div>
                             {project.title === "Demo" ? (
                                 <div className="w-100">

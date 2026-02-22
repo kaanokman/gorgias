@@ -3,23 +3,30 @@ import { Suspense } from "react";
 import ReviewsTable from "@/components/Reviews";
 import { Spinner } from "react-bootstrap";
 import { validateRange } from "./helpers";
+import type { ReviewType } from "@/types/components";
 
 type Range = { start: string; end: string };
 
-async function getReviews(range: Range) {
+async function getReviews(range: Range, domain?: string) {
     const supabase = await createClient();
 
     const pageSize = 1000;
-    const allRows: any[] = [];
+    const allRows: ReviewType[] = [];
     let from = 0;
 
     while (true) {
-        const { data, error } = await supabase
+        let query = supabase
             .from("reviews")
             .select(`id, domain, reviewText, reviewTitle, starRating, datePublished, reviewerName,
                 companyReplied, sentiment, main_category, key_pain_point, actionable_insight`)
             .gte("datePublished", range.start.slice(0, 10))
-            .lte("datePublished", range.end.slice(0, 10))
+            .lte("datePublished", range.end.slice(0, 10));
+
+        if (domain) {
+            query = query.eq("domain", domain);
+        }
+
+        const { data, error } = await query
             .order("datePublished", { ascending: false })
             .range(from, from + pageSize - 1);
 
@@ -28,7 +35,7 @@ async function getReviews(range: Range) {
             return { data: [], error: "Error loading reviews" };
         }
 
-        const batch = data ?? [];
+        const batch = (data ?? []) as ReviewType[];
         allRows.push(...batch);
 
         if (batch.length < pageSize) break;
@@ -56,7 +63,11 @@ async function getAllDomains() {
     );
 }
 
-export default async function Dashboard({ searchParams }: { searchParams?: Promise<{ start?: string; end?: string }> }) {
+export default async function Dashboard({
+    searchParams,
+}: {
+    searchParams?: Promise<{ start?: string; end?: string; domain?: string }>;
+}) {
     return (
         <Suspense fallback={
             <div className='w-100 h-100 flex items-center justify-center'>
@@ -68,17 +79,29 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
     );
 }
 
-async function ReviewsPage({ params }: { params?: Promise<{ start?: string; end?: string }> }) {
+async function ReviewsPage({ params }: { params?: Promise<{ start?: string; end?: string; domain?: string }> }) {
     const searchParams = await params;
     const { range, error } = validateRange(searchParams?.start, searchParams?.end);
 
     const start = range.start;
     const end = range.end;
 
-    const [result, allDomains] = await Promise.all([
-        error ? Promise.resolve({ data: [], error }) : getReviews({ start, end }),
-        getAllDomains(),
-    ]);
+    const allDomains = await getAllDomains();
+    const selectedDomain = allDomains.includes(searchParams?.domain ?? "")
+        ? (searchParams?.domain as string)
+        : (allDomains[0] ?? "");
 
-    return <ReviewsTable reviews={result.data} allDomains={allDomains} error={result.error} range={{ start, end }} />;
+    const result = error
+        ? { data: [], error }
+        : await getReviews({ start, end }, selectedDomain || undefined);
+
+    return (
+        <ReviewsTable
+            reviews={result.data}
+            allDomains={allDomains}
+            selectedDomain={selectedDomain}
+            error={result.error}
+            range={{ start, end }}
+        />
+    );
 }
