@@ -1,16 +1,16 @@
 $light: #fcfaf8;
 $min-contrast-ratio: 2;
 
-$color-contrast-dark: #28030f;
+$color-contrast-dark: #1a1e23;
 $color-contrast-light: #fcfaf8;
 
 @import "../node_modules/bootstrap/scss/functions";
 @import "../node_modules/bootstrap/scss/variables";
 
 $custom-theme-colors: (
-    "sunlight": #fbf582,
-    "bark": #28030f,
-    "oak": #ecd7c6,
+    "sunlight": #fdede0,
+    "bark": #1a1e23,
+    "oak": #ff9780,
     "purple": #4727ff,
 );
 

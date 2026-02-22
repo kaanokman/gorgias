@@ -1,29 +1,59 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
-import Voicemails from "@/components/Voicemails";
+import ReviewsTable from "@/components/Reviews";
 import { Spinner } from "react-bootstrap";
 import { validateRange } from "./helpers";
 
 type Range = { start: string; end: string };
 
-async function getVoicemails(range: Range) {
+async function getReviews(range: Range) {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect("/auth/login");
+
+    const pageSize = 1000;
+    const allRows: any[] = [];
+    let from = 0;
+
+    while (true) {
+        const { data, error } = await supabase
+            .from("reviews")
+            .select(`id, domain, reviewText, reviewTitle, starRating, datePublished, reviewerName,
+                companyReplied, sentiment, main_category, key_pain_point, actionable_insight`)
+            .gte("datePublished", range.start.slice(0, 10))
+            .lte("datePublished", range.end.slice(0, 10))
+            .order("datePublished", { ascending: false })
+            .range(from, from + pageSize - 1);
+
+        if (error) {
+            console.error("Error loading reviews: ", error.message);
+            return { data: [], error: "Error loading reviews" };
+        }
+
+        const batch = data ?? [];
+        allRows.push(...batch);
+
+        if (batch.length < pageSize) break;
+        from += pageSize;
+    }
+
+    return { data: allRows };
+}
+
+async function getAllDomains() {
+    const supabase = await createClient();
 
     const { data, error } = await supabase
-        .from("voicemails")
-        .select("id, phone_number, patient, reason, suggestion, urgency, timestamp, status")
-        .eq("user_id", user.id)
-        .gte("timestamp", range.start)
-        .lte("timestamp", range.end)
-        .order("timestamp", { ascending: true });
+        .from("reviews")
+        .select("domain")
+        .order("domain", { ascending: true });
+
     if (error) {
-        console.error("Error loading voicemails: ", error.message);
-        return { data: [], error: 'Error loading voicemails' };
+        console.error("Error loading review domains: ", error.message);
+        return [] as string[];
     }
-    return { data: data ?? [] };
+
+    return Array.from(
+        new Set((data ?? []).map((row) => row.domain).filter((value): value is string => Boolean(value))),
+    );
 }
 
 export default async function Dashboard({ searchParams }: { searchParams?: Promise<{ start?: string; end?: string }> }) {
@@ -33,20 +63,22 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
                 <Spinner />
             </div>
         }>
-            <VoicemailsPage params={searchParams} />
+            <ReviewsPage params={searchParams} />
         </Suspense>
     );
 }
 
-async function VoicemailsPage({ params }: { params?: Promise<{ start?: string; end?: string }> }) {
-    // Check if params are valid if they exist
+async function ReviewsPage({ params }: { params?: Promise<{ start?: string; end?: string }> }) {
     const searchParams = await params;
     const { range, error } = validateRange(searchParams?.start, searchParams?.end);
 
     const start = range.start;
     const end = range.end;
 
-    const result = error ? { data: [], error } : await getVoicemails({ start, end });
+    const [result, allDomains] = await Promise.all([
+        error ? Promise.resolve({ data: [], error }) : getReviews({ start, end }),
+        getAllDomains(),
+    ]);
 
-    return <Voicemails voicemails={result.data} error={result.error} range={{ start, end }} />;
+    return <ReviewsTable reviews={result.data} allDomains={allDomains} error={result.error} range={{ start, end }} />;
 }

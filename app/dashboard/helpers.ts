@@ -4,7 +4,7 @@ type Range = { start: string; end: string };
 
 export function validateRange(start?: string | null, end?: string | null): { range: Range; error?: string } {
     const fallback = {
-        start: DateTime.now().minus({ days: 7 }).startOf("day").toISO(),
+        start: DateTime.now().minus({ years: 5 }).startOf("day").toISO(),
         end: DateTime.now().endOf("day").toISO(),
     };
     if (!start && !end) {

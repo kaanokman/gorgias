@@ -29,14 +29,13 @@
         --chart-4: 43 74% 66%;
         --chart-5: 27 87% 67%;
         --radius: 0.5rem;
-        --bs-body-color: hsl(var(--foreground));
-        --bs-emphasis-color: hsl(var(--foreground));
+        --bs-body-color: #1a1e23;
+        --bs-emphasis-color: #1a1e23;
         --bs-secondary-color: hsl(var(--muted-foreground));
         --bs-tertiary-color: hsl(var(--muted-foreground));
 
-        --rs-border: #ccc;
-        /* react-select default */
-        --rs-border-hover: #b3b3b3;
+        --rs-border: #ddcfc4;
+        --rs-border-hover: #ff9780;
     }
 
     .dark {
@@ -74,28 +73,28 @@
 
     body {
         @apply bg-background text-foreground;
-        color: hsl(var(--foreground));
+        color: #1a1e23;
     }
 }
 
 /* Custom list group styling */
 .list-group-item.active {
-    background-color: #fbf58222 !important;
-    border-color: #ecd7c6 !important;
-    color: #28030f !important;
+    background-color: #fdede0 !important;
+    border-color: #ffcfbf !important;
+    color: #1a1e23 !important;
     border: none !important;
-    border: 1 solid #ecd7c6 !important;
+    border: 1px solid #ffcfbf !important;
 }
 
 .list-group-item.active:hover {
-    background-color: #ecd7c6 !important;
-    border-color: #fbf582 !important;
-    color: #28030f !important;
-    border: 1 solid #ecd7c6 !important;
+    background-color: #ffe2d6 !important;
+    border-color: #ffb49f !important;
+    color: #1a1e23 !important;
+    border: 1px solid #ffb49f !important;
 }
 
 .list-group-item:hover {
-    background-color: #0018EA11 !important;
+    background-color: #fdede0aa !important;
 }
 
 .tooltip {
@@ -107,13 +106,14 @@
 }
 
 .btn-light {
-    --bs-btn-color: #28030f;
-    --bs-btn-hover-color: #28030f;
-    --bs-btn-active-color: #28030f;
-    --bs-btn-border-color: #fcfaf8;
-    --bs-btn-hover-border-color: #ecd7c6;
-    --bs-btn-hover-bg: #ecd7c6;
-    --bs-btn-active-border-color: #ecd7c6;
+    --bs-btn-color: #1a1e23;
+    --bs-btn-hover-color: #1a1e23;
+    --bs-btn-active-color: #1a1e23;
+    --bs-btn-border-color: #fdede0;
+    --bs-btn-hover-border-color: #ffcfbf;
+    --bs-btn-hover-bg: #fdede0;
+    --bs-btn-active-border-color: #ffcfbf;
+    --bs-btn-active-bg: #ffe2d6;
 }
 
 .btn {
@@ -124,19 +124,6 @@
     padding-right: 15;
     border-radius: 10;
     font-weight: 500;
-}
-
-.form-control:focus,
-.form-select:focus {
-    border-color: #2684ff !important;
-    box-shadow: 0 0 0 1px #2684ff !important;
-    outline: 0 !important;
-}
-
-.form-select:hover {
-    border-color: #2684ff !important;
-    box-shadow: 0 0 0 1px #2684ff !important;
-    outline: 0 !important;
 }
 
 /* React-Bootstrap inputs + selects */
@@ -151,12 +138,27 @@
 .form-select:hover,
 .audioBox:hover {
     border-color: var(--rs-border-hover) !important;
+    box-shadow: none !important;
+    outline: 1px solid var(--rs-border-hover) !important;
+    outline-offset: 0;
+}
+
+.form-control:focus:hover,
+.form-select:focus:hover,
+.audioBox:focus:hover {
+    outline: 1px solid #ff9780 !important;
+    border-color: #ff9780 !important;
+    box-shadow: none !important;
+    outline-offset: 0;
 }
 
 /* If Bootstrap adds focus styles you want to keep consistent too */
 .form-control:focus,
 .form-select:focus {
-    border-color: #2684ff !important;
+    border-color: #ff9780 !important;
+    box-shadow: none !important;
+    outline: 1px solid #ff9780 !important;
+    outline-offset: 0;
 }
 
 .form-control:disabled,
@@ -176,12 +178,12 @@
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-    background: #ced4da;
+    background: #999999;
     border-radius: 2px;
 }
 
 .clear-button:hover {
-    color: #333;
+    color: #1a1e23;
     cursor: default;
 }
 
@@ -196,4 +198,32 @@
 
 .custom-dropdown.show .dropdown-toggle {
     opacity: 1 !important;
+}
+
+.reviews-tabs.nav-tabs .nav-link.active,
+.reviews-tabs.nav-tabs .nav-item.show .nav-link {
+    background-color: transparent !important;
+    /* border-color: var(--bs-nav-tabs-border-color) !important; */
+    border-bottom-color: rgb(252 250 248) !important;
+}
+
+.reviews-tabs.nav-tabs {
+    display: flex;
+}
+
+.reviews-tabs.nav-tabs .nav-item:first-child {
+    order: 2;
+}
+
+.reviews-tabs.nav-tabs .nav-item:last-child {
+    order: 1;
+}
+.reviews-pagination .page-item.active .page-link {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+}
+
+.reviews-pagination .page-link:focus {
+  box-shadow: none;
 }

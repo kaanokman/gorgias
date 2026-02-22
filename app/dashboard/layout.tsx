@@ -11,8 +11,8 @@ export default function ProtectedLayout({
                 style={{ width: "200px", minWidth: "200px" }}>
                 <Sidebar />
             </div>
-            <div className="flex flex-1">
-                <div style={{ marginLeft: 200 }} className="flex p-3 z-0 flex-1 gap-3">
+            <div className="flex flex-1 min-w-0">
+                <div style={{ marginLeft: 200 }} className="flex p-3 z-0 flex-1 gap-3 min-w-0">
                     {children}
                 </div>
             </div>

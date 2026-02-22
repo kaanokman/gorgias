@@ -13,3 +13,18 @@ export type VoicemailFormData = {
     phone_number: string;
     audio: FileList;
 };
+
+export interface ReviewType {
+    id: string;
+    domain: string;
+    reviewText: string | null;
+    reviewTitle: string;
+    starRating: number;
+    datePublished: string;
+    reviewerName: string;
+    companyReplied: boolean;
+    sentiment: string;
+    main_category: string;
+    key_pain_point: string | null;
+    actionable_insight: string | null;
+}
