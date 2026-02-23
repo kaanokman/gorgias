@@ -9,7 +9,7 @@ import { useState } from "react";
 
 export default function Home() {
     const [showDemo, setShowDemo] = useState(false);
-    const demoVideoUrl = "https://drive.google.com/file/d/13hQtb1CFVwJ6-nfYAfpUAVPxb8-nXovU/preview";
+    const demoVideoUrl = "https://drive.google.com/file/d/1BWPeTGK4vXlNslz_XXwumj3-I_xKcBcr/preview";
     const [loaded, setLoaded] = useState(false);
 
     return (
@@ -33,27 +33,27 @@ export default function Home() {
                             variant: "dark",
                             icon: AiFillGithub,
                         },
-                        // {
-                        //     title: "Demo",
-                        //     link: "/",
-                        //     variant: "oak",
-                        //     description: "A demonstration video of the dashboard's workflow",
-                        //     icon: BsPersonVideo2,
-                        // },
+                        {
+                            title: "Demo",
+                            link: "/",
+                            variant: "oak",
+                            description: "A demonstration video of the dashboard's workflow",
+                            icon: BsPersonVideo2,
+                        },
                         {
                             title: "Dashboard",
                             link: "/dashboard",
-                            variant: "oak",
+                            variant: "sunlight",
                             description: "The implemented dashboard for insights into a domain's Trustpilot reviews",
                             icon: LuLayoutDashboard,
                         },
                     ].map((project) => (
-                        <Col xs={12} md={6} key={project.title} className="d-flex flex-column gap-3">
+                        <Col xs={12} md={4} key={project.title} className="d-flex flex-column gap-3">
                             <div
                                 className="w-100 bg-light rounded border flex items-center justify-center"
                                 style={{ aspectRatio: 4 / 3 }}
                             >
-                                <project.icon size={160} />
+                                <project.icon size={120} />
                             </div>
                             {project.title === "Demo" ? (
                                 <div className="w-100">
@@ -103,7 +103,7 @@ export default function Home() {
                             allow="autoplay; fullscreen"
                             style={{
                                 width: "100%",
-                                aspectRatio: 734 / 434,
+                                aspectRatio: 734 / 373,
                                 visibility: loaded ? "visible" : "hidden",
                                 border: 0,
                             }}
