@@ -92,7 +92,7 @@ export default function Home() {
                         {!loaded && (
                             <div
                                 className="absolute inset-0 flex justify-center items-center w-100"
-                                style={{ zIndex: 99, aspectRatio: 169 / 100 }}
+                                style={{ zIndex: 99, aspectRatio: 734 / 373, }}
                             >
                                 <Spinner />
                             </div>
