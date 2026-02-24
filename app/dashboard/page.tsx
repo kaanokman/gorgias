@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Suspense } from "react";
 import ReviewsTable from "@/components/Reviews";
 import { Spinner } from "react-bootstrap";
@@ -8,7 +8,7 @@ import type { ReviewType } from "@/types/components";
 type Range = { start: string; end: string };
 
 async function getReviews(range: Range, domain?: string) {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const pageSize = 1000;
     const allRows: ReviewType[] = [];
@@ -16,7 +16,7 @@ async function getReviews(range: Range, domain?: string) {
 
     while (true) {
         let query = supabase
-            .from("reviews")
+            .from("reviews_bq")
             .select(`id, domain, reviewText, reviewTitle, starRating, datePublished, reviewerName,
                 companyReplied, sentiment, main_category, key_pain_point, actionable_insight`)
             .gte("datePublished", range.start.slice(0, 10))
@@ -46,10 +46,10 @@ async function getReviews(range: Range, domain?: string) {
 }
 
 async function getAllDomains() {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
-        .from("reviews")
+        .from("reviews_bq")
         .select("domain")
         .order("domain", { ascending: true });
 
