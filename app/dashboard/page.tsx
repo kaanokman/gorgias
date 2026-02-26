@@ -48,19 +48,43 @@ async function getReviews(range: Range, domain?: string) {
 async function getAllDomains() {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase
-        .from("reviews_bq")
-        .select("domain")
-        .order("domain", { ascending: true });
+    // Prefer a DB-side DISTINCT function/view to avoid client-side row caps.
+    const { data: rpcData, error: rpcError } = await supabase.rpc("get_review_domains");
 
-    if (error) {
-        console.error("Error loading review domains: ", error.message);
-        return [] as string[];
+    if (!rpcError) {
+        return Array.from(
+            new Set((rpcData ?? []).map((row: { domain: string | null }) => row.domain).filter((value): value is string => Boolean(value))),
+        ).sort((a, b) => a.localeCompare(b));
+    }
+
+    console.warn("Falling back to paginated domain fetch; RPC get_review_domains unavailable:", rpcError.message);
+
+    const pageSize = 1000;
+    const allRows: Array<{ domain: string | null }> = [];
+    let from = 0;
+
+    while (true) {
+        const { data, error } = await supabase
+            .from("reviews_bq")
+            .select("domain")
+            .order("domain", { ascending: true })
+            .range(from, from + pageSize - 1);
+
+        if (error) {
+            console.error("Error loading review domains: ", error.message);
+            return [] as string[];
+        }
+
+        const batch = (data ?? []) as Array<{ domain: string | null }>;
+        allRows.push(...batch);
+
+        if (batch.length < pageSize) break;
+        from += pageSize;
     }
 
     return Array.from(
-        new Set((data ?? []).map((row) => row.domain).filter((value): value is string => Boolean(value))),
-    );
+        new Set(allRows.map((row) => row.domain).filter((value): value is string => Boolean(value))),
+    ).sort((a, b) => a.localeCompare(b));
 }
 
 export default async function Dashboard({
