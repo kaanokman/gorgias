@@ -52,8 +52,9 @@ async function getAllDomains() {
     const { data: rpcData, error: rpcError } = await supabase.rpc("get_review_domains");
 
     if (!rpcError) {
+        const rpcRows = (rpcData ?? []) as Array<{ domain: string | null }>;
         return Array.from(
-            new Set((rpcData ?? []).map((row: { domain: string | null }) => row.domain).filter((value): value is string => Boolean(value))),
+            new Set(rpcRows.map((row) => row.domain).filter((value): value is string => Boolean(value))),
         ).sort((a, b) => a.localeCompare(b));
     }
 
