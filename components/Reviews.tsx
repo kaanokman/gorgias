@@ -165,7 +165,7 @@ export default function ReviewsTable({
     const [isPending, startTransition] = useTransition();
 
     const [sorting, setSorting] = useState<SortingState>([{ id: "datePublished", desc: true }]);
-    const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+    const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 });
     const [showRangeModal, setShowRangeModal] = useState(false);
     const [activeTab, setActiveTab] = useState<"table" | "metrics">("metrics");
     const [dateRange, setDateRange] = useState(() => ({
@@ -183,6 +183,11 @@ export default function ReviewsTable({
     useEffect(() => {
         setDateRange({ start: new Date(range.start), end: new Date(range.end) });
     }, [range.start, range.end]);
+
+    useEffect(() => {
+        const nextTab = searchParams.get("tab");
+        setActiveTab(nextTab === "table" || nextTab === "metrics" ? nextTab : "metrics");
+    }, [searchParams]);
 
     useEffect(() => {
         setDomain(selectedDomain ?? "");
@@ -304,21 +309,30 @@ export default function ReviewsTable({
         const params = new URLSearchParams(searchParams.toString());
         params.set("start", nextRange.start.toISOString().slice(0, 10));
         params.set("end", nextRange.end.toISOString().slice(0, 10));
+        params.set("tab", activeTab);
         startTransition(() => {
             router.replace(`?${params.toString()}`);
             router.refresh();
         });
-    }, [router, searchParams, startTransition]);
+    }, [activeTab, router, searchParams, startTransition]);
 
     const onDomainChange = useCallback((nextDomain: string) => {
         setPendingDomain(nextDomain);
         const params = new URLSearchParams(searchParams.toString());
         params.set("domain", nextDomain);
+        params.set("tab", activeTab);
         startTransition(() => {
             router.replace(`?${params.toString()}`);
             router.refresh();
         });
-    }, [router, searchParams, startTransition]);
+    }, [activeTab, router, searchParams, startTransition]);
+
+    const onTabChange = useCallback((nextTab: "table" | "metrics") => {
+        setActiveTab(nextTab);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("tab", nextTab);
+        router.replace(`?${params.toString()}`);
+    }, [router, searchParams]);
 
     const filteredReviews = useMemo(() => {
         return reviews.filter((review) => {
@@ -534,66 +548,80 @@ export default function ReviewsTable({
 
     return (
         <div className="flex flex-col gap-3 w-full">
-            <Row className="gy-3 align-items-end">
-                <Col xs={12} lg='auto' className="text-3xl font-semibold">
-                    Reviews for domain
-                </Col>
-                <Col xs={12} md>
-                    <div className="d-flex align-items-center gap-2">
-                        <div className="flex-grow-1">
-                            <Select
-                                instanceId="domain-filter"
-                                inputId="domain-filter"
-                                styles={filterSelectStyles}
-                                options={domainOptions}
-                                value={domainOptions.find((o) => o.value === (pendingDomain ?? domain)) ?? null}
-                                onChange={(opt) => {
-                                    const nextDomain = opt?.value ?? "";
-                                    if (!nextDomain || nextDomain === (pendingDomain ?? domain)) return;
-                                    onDomainChange(nextDomain);
-                                }}
-                                isClearable={false}
-                                isDisabled={domainOptions.length === 0 || isPending}
-                                placeholder="Select domain"
-                            />
-                        </div>
-                        {isPending && <Spinner size="sm" className="flex-shrink-0" />}
-                    </div>
-                </Col>
-                <Col xs='auto'>
-                    <Dropdown>
-                        <Dropdown.Toggle variant="outline-bark" className="w-100 text-start rounded-1">
-                            {formatRangeLabel(dateRange.start, dateRange.end)}
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu>
-                            {dateRangeOptions.map(({ label, days, months, years }) => (
-                                <Dropdown.Item
-                                    key={label}
-                                    onClick={() => {
-                                        const end = new Date();
-                                        const start = new Date(end);
-                                        if (days) start.setDate(end.getDate() - days);
-                                        if (months) start.setMonth(end.getMonth() - months);
-                                        if (years) start.setFullYear(end.getFullYear() - years);
-                                        setDateRange({ start, end });
-                                        onDateRangeChange({ start, end });
+            <fieldset
+                disabled={isPending}
+                style={{
+                    border: 0,
+                    margin: 0,
+                    padding: 0,
+                    minWidth: 0,
+                    pointerEvents: isPending ? "none" : undefined,
+                }}
+            >
+                <Row className="gy-3 align-items-end">
+                    <Col xs={12} lg='auto' className="text-3xl font-semibold">
+                        Reviews for domain
+                    </Col>
+                    <Col xs={12} md>
+                        <div className="d-flex align-items-center gap-2">
+                            <div className="flex-grow-1">
+                                <Select
+                                    instanceId="domain-filter"
+                                    inputId="domain-filter"
+                                    styles={filterSelectStyles}
+                                    options={domainOptions}
+                                    value={domainOptions.find((o) => o.value === (pendingDomain ?? domain)) ?? null}
+                                    onChange={(opt) => {
+                                        const nextDomain = opt?.value ?? "";
+                                        if (!nextDomain || nextDomain === (pendingDomain ?? domain)) return;
+                                        onDomainChange(nextDomain);
                                     }}
-                                >
-                                    {label}
-                                </Dropdown.Item>
-                            ))}
-                            <Dropdown.Divider />
-                            <Dropdown.Item onClick={() => setShowRangeModal(true)}>Custom...</Dropdown.Item>
-                        </Dropdown.Menu>
-                    </Dropdown>
-                </Col>
-            </Row>
-            <div className="d-flex flex-column gap-3">
-                <Tabs
-                    activeKey={activeTab}
-                    onSelect={(key) => setActiveTab((key as "table" | "metrics") ?? "table")}
-                    className="mb-0 reviews-tabs"
-                >
+                                    isClearable={false}
+                                    isDisabled={domainOptions.length === 0 || isPending}
+                                    placeholder="Select domain"
+                                />
+                            </div>
+                            {isPending && <Spinner size="sm" className="flex-shrink-0" />}
+                        </div>
+                    </Col>
+                    <Col xs='auto'>
+                        <Dropdown>
+                            <Dropdown.Toggle
+                                variant="outline-bark"
+                                className="w-100 text-start rounded-1"
+                                disabled={isPending}
+                            >
+                                {formatRangeLabel(dateRange.start, dateRange.end)}
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                                {dateRangeOptions.map(({ label, days, months, years }) => (
+                                    <Dropdown.Item
+                                        key={label}
+                                        onClick={() => {
+                                            const end = new Date();
+                                            const start = new Date(end);
+                                            if (days) start.setDate(end.getDate() - days);
+                                            if (months) start.setMonth(end.getMonth() - months);
+                                            if (years) start.setFullYear(end.getFullYear() - years);
+                                            setDateRange({ start, end });
+                                            onDateRangeChange({ start, end });
+                                        }}
+                                    >
+                                        {label}
+                                    </Dropdown.Item>
+                                ))}
+                                <Dropdown.Divider />
+                                <Dropdown.Item onClick={() => setShowRangeModal(true)}>Custom...</Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
+                    </Col>
+                </Row>
+                <div className="d-flex flex-column gap-3">
+                    <Tabs
+                        activeKey={activeTab}
+                        onSelect={(key) => onTabChange((key as "table" | "metrics") ?? "table")}
+                        className="mb-0 reviews-tabs"
+                    >
                     <Tab eventKey="table" title="Table">
                         <div className="d-flex flex-column gap-3">
                             <Row className="g-3">
@@ -607,6 +635,7 @@ export default function ReviewsTable({
                                             options={sentimentOptions}
                                             value={sentimentOptions.find((o) => o.value === sentiment) ?? null}
                                             onChange={(opt) => setSentiment(opt?.value ?? "")}
+                                            isDisabled={isPending}
                                             isClearable
                                             placeholder="All"
                                         />
@@ -622,6 +651,7 @@ export default function ReviewsTable({
                                             options={categoryOptions}
                                             value={categoryOptions.find((o) => o.value === category) ?? null}
                                             onChange={(opt) => setCategory(opt?.value ?? "")}
+                                            isDisabled={isPending}
                                             isClearable
                                             placeholder="All"
                                         />
@@ -637,6 +667,7 @@ export default function ReviewsTable({
                                             options={starOptions}
                                             value={starOptions.find((o) => o.value === starFilter) ?? null}
                                             onChange={(opt) => setStarFilter((opt?.value ?? "") as typeof starFilter)}
+                                            isDisabled={isPending}
                                             isClearable
                                             placeholder="All"
                                         />
@@ -652,6 +683,7 @@ export default function ReviewsTable({
                                             options={replyOptions}
                                             value={replyOptions.find((o) => o.value === replyFilter) ?? null}
                                             onChange={(opt) => setReplyFilter((opt?.value ?? "") as typeof replyFilter)}
+                                            isDisabled={isPending}
                                             isClearable
                                             placeholder="All"
                                         />
@@ -666,7 +698,6 @@ export default function ReviewsTable({
                                         style={{
                                             border: "1px solid #dee2e6",
                                             borderRadius: 4,
-                                            maxHeight: "52vh",
                                         }}
                                     >
                                         <Table
@@ -1027,8 +1058,9 @@ export default function ReviewsTable({
                             )}
                         </div>
                     </Tab>
-                </Tabs>
-            </div>
+                    </Tabs>
+                </div>
+            </fieldset>
 
             <Modal show={showRangeModal} onHide={() => setShowRangeModal(false)} centered>
                 <Modal.Header closeButton>
@@ -1036,21 +1068,32 @@ export default function ReviewsTable({
                 </Modal.Header>
                 <Modal.Body>
                     <form id="range-form">
-                        <div className="d-flex gap-3 align-items-center">
-                            <input
-                                type="date"
-                                name="start"
-                                defaultValue={dateRange.start.toISOString().slice(0, 10)}
-                                className="form-control"
-                            />
-                            <span>to</span>
-                            <input
-                                type="date"
-                                name="end"
-                                defaultValue={dateRange.end.toISOString().slice(0, 10)}
-                                className="form-control"
-                            />
-                        </div>
+                        <fieldset
+                            disabled={isPending}
+                            style={{
+                                border: 0,
+                                margin: 0,
+                                padding: 0,
+                                minWidth: 0,
+                                pointerEvents: isPending ? "none" : undefined,
+                            }}
+                        >
+                            <div className="d-flex gap-3 align-items-center">
+                                <input
+                                    type="date"
+                                    name="start"
+                                    defaultValue={dateRange.start.toISOString().slice(0, 10)}
+                                    className="form-control"
+                                />
+                                <span>to</span>
+                                <input
+                                    type="date"
+                                    name="end"
+                                    defaultValue={dateRange.end.toISOString().slice(0, 10)}
+                                    className="form-control"
+                                />
+                            </div>
+                        </fieldset>
                     </form>
                 </Modal.Body>
                 <Modal.Footer>
